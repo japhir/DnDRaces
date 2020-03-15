@@ -278,5 +278,59 @@ To ultimately combine the two into one figure using ~patchwork~.
 
 [[file:races_stats.png]]
 
+* Body Mass Index
+Okay now for some more mental picturing, let's calculate the average BMI for
+these races. BMI is a troublesome indicator for humans alone already, and will
+certainly be wrong for the heavy-boned dwarfs, but it's nice to give us a
+little bit more of a mental picture.
+
+I found these BMI categories [[https://en.wikipedia.org/wiki/Body_mass_index#Categories][on the WikiPedia article on BMI]].
+
+#+TBLNAME: bmi
+| category                              | from |   to |
+|---------------------------------------+------+------|
+| Very severely underweight             |      |   15 |
+| Severely underweight                  |   15 |   16 |
+| Underweight                           |   16 | 18.5 |
+| Normal (healthy weight)               | 18.5 |   25 |
+| Overweight                            |   25 |   30 |
+| Obese Class I (Moderately obese)      |   30 |   35 |
+| Obese Class II (Severely obese)       |   35 |   40 |
+| Obese Class III (Very severely obese) |   40 |      |
+
+#+begin_src R :var categories=bmi :results graphics file :file races_bmi.png :width 600
+  # clean up the categories
+  cat <- categories %>%
+    mutate(from = ifelse(is.na(from), -Inf, from),
+           to = ifelse(is.na(to), Inf, to),
+           category = factor(category, levels = rev(category), ordered = TRUE))
+
+  # calculate average bmi
+  bmi_avg <- races_sum %>% mutate(bmi = weight_med / (height_med/100)^2)
+
+  # calculate all bmi's
+  bmi <- races_stats %>%
+    mutate(bmi = weight / (height / 100)^2)
+
+  # plot them
+  bmi_avg %>%
+    ggplot(aes(x = Race, y = bmi)) +
+    # annotate the categories
+    geom_rect(aes(xmin = -Inf, xmax = Inf,
+                  ymin = from,
+                  ymax = to,
+                  fill = category),
+              inherit.aes = FALSE, data = cat) +
+    scale_fill_brewer(palette = "RdBu") +
+    geom_violin(data = bmi, bw = .8, fill = "gray", draw_quantiles = c(.25, .5, .75)) +
+    labs(fill = "BMI\nif they would have been human", y = "BMI (kg /"~m^2*")") +
+    geom_point() +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+#+end_src
+
+#+RESULTS:
+
+[[file:races_bmi.png]]
+
 And that's it! A quick dive into some simulations with R! Any feedback on how
 to improve this workflow is welcome.
