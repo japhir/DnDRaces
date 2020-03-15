@@ -137,6 +137,7 @@ Let's check that we have a fair die
 #+end_src
 
 #+RESULTS:
+
 [[file:1d20hist.png]]
 
 This seems ok.
@@ -172,6 +173,7 @@ We also convert everything into sensible units.
 #+end_src
 
 #+RESULTS:
+
 | Race            | Base.Height | bh_f | bh_i | Height.Modifier | n_height | d_height | Base.Weight | Weight.Modifier | n_weight | d_weight | base_cm |    base_kg |
 |-----------------+-------------+------+------+-----------------+----------+----------+-------------+-----------------+----------+----------+---------+------------|
 | Human           |           4 |    4 |    8 |           +2d10 |        2 |       10 |         110 | ×(2d4) lb.      |        2 |        4 |  142.24 |  49.895153 |
@@ -222,6 +224,7 @@ We also convert Race to a factor, which is sorted by the average height.
 #+end_src
 
 #+RESULTS:
+
 | Race            | height_med |  weight_med | Base.Height | bh_f | bh_i | Height.Modifier | n_height | d_height | Base.Weight | Weight.Modifier | n_weight | d_weight | base_cm |    base_kg | lab_kg          |
 |-----------------+------------+-------------+-------------+------+------+-----------------+----------+----------+-------------+-----------------+----------+----------+---------+------------+-----------------|
 | Halfling        |      91.44 |   18.143692 |           2 |    2 |    7 |            +2d4 |        2 |        4 |          35 | ×1 lb.          |      nil |      nil |   78.74 | 15.8757305 | +2d4×1 lb.      |
