@@ -1,0 +1,280 @@
+#+TITLE: Simulating D&D 5e Race Heights and Weights
+#+OPTIONS: ^:{}
+
+In D&D you can roll dice to determine your character's height and weight based
+on it's race.
+
+This is the table of race size and weight in the D&D player handbook:
+
+| Race            | Base Height | Height Modifier | Base Weight | Weight Modifier |
+|-----------------+-------------+-----------------+-------------+-----------------|
+| Human           | 4'8"        |           +2d10 | 110 lb.     | × (2d4) lb.     |
+| Dwarf, hill     | 3'8"        |            +2d4 | 115 lb.     | × (2d6) lb.     |
+| Dwarf, mountain | 4'          |            +2d4 | 130 lb.     | × (2d6) lb.     |
+| Elf, high       | 4'6"        |           +2d10 | 90 lb.      | × (1d4) lb.     |
+| Elf, wood       | 4'6"        |           +2d10 | 100 lb.     | × (1d4) lb.     |
+| Elf, drow       | 4'5"        |            +2d6 | 75 lb.      | × (1d6) lb.     |
+| Halfling        | 2'7"        |            +2d4 | 35 lb.      | × 1 lb.         |
+| Dragonborn      | 5'6"        |            +2d8 | 175 lb.     | × (2d6) lb.     |
+| Gnome           | 2'11"       |            +2d4 | 35 lb.      | × 1 lb.         |
+| Half-elf        | 4'9"        |            +2d8 | 110 lb.     | × (2d4) lb.     |
+| Half-orc        | 4'10"       |           +2d10 | 140 lb.     | × (2d6) lb.     |
+| Tiefling        | 4'9"        |            +2d8 | 110 lb.     | × (2d4) lb.     |
+
+To calculate the height, you have to add the ~Base Height~ to, e.g. 2d10 dice
+rolls for the Human, which means you have to roll two 10-sided-die to determine
+how much to add, in inches.
+
+I don't think in terms of feet, inches, and pounds, so I thought I'd convert
+some things to centimetres and kilogrammes in stead. Furthermore, I wanted to
+better understand how these dice-rolls influence the final distribution of
+weights and heights in the D&D universe.
+
+And so I've simulated some dice-rolls to answer those questions!
+
+Here I've quickly (manually) tidied the table up for use in R.
+
+#+TBLNAME: races
+| Race            | Base Height | bh_f | bh_i | Height Modifier | n_height | d_height | Base Weight | Weight Modifier | n_weight | d_weight |
+|-----------------+-------------+------+------+-----------------+----------+----------+-------------+-----------------+----------+----------|
+| Human           | "4\'8\""    |    4 |    8 |           +2d10 |        2 |       10 |         110 | ×(2d4) lb.      |        2 |        4 |
+| Dwarf, hill     | "3\'8\""    |    3 |    8 |            +2d4 |        2 |        4 |         115 | ×(2d6) lb.      |        2 |        6 |
+| Dwarf, mountain | "4\'"       |    4 |    0 |            +2d4 |        2 |        4 |         130 | ×(2d6) lb.      |        2 |        6 |
+| Elf,  high      | "4\'6\""    |    4 |    6 |           +2d10 |        2 |       10 |          90 | ×(1d4) lb.      |        1 |        4 |
+| Elf, wood       | "4\'6\""    |    4 |    6 |           +2d10 |        2 |       10 |         100 | ×(1d4) lb.      |        1 |        4 |
+| Elf,  drow      | "4\'5\""    |    4 |    5 |            +2d6 |        2 |        6 |          75 | ×(1d6) lb.      |        1 |        6 |
+| Halfling        | "2\'7\""    |    2 |    7 |            +2d4 |        2 |        4 |          35 | ×1 lb.          |          |          |
+| Dragonborn      | "5\'6\""    |    5 |    6 |            +2d8 |        2 |        8 |         175 | ×(2d6) lb.      |        2 |        6 |
+| Gnome           | "2\'11\""   |    2 |   11 |            +2d4 |        2 |        4 |          35 | ×1 lb.          |          |          |
+| Half-elf        | "4\'9\""    |    4 |    9 |            +2d8 |        2 |        8 |         110 | ×(2d4) lb.      |        2 |        4 |
+| Half-orc        | "4\'10\""   |    4 |   10 |           +2d10 |        2 |       10 |         140 | ×(2d6) lb.      |        2 |        6 |
+| Tiefling        | "4\'9\""    |    4 |    9 |            +2d8 |        2 |        8 |         110 | ×(2d4) lb.      |        2 |        4 |
+
+NOTE: I'm using [[emacs'][emacs]] with [[https://ess.r-project.org/][ess]] in [[https://orgmode.org/][org-mode]], and this allows me to name the
+sheet with ~#+TBLNAME:~ so that I can pass it into the header argument of a
+codeblock later on with ~:var dat=races~. If you don't use emacs/org-mode but,
+e.g. RStudio with RMarkdown, it's easier to save the table as a csv first.
+
+# this is so that we work in an R session in emacs with ess
+#+PROPERTY: header-args:R  :session *R*
+
+First load the libraries we use here:
+#+begin_src R
+  library(dplyr)
+  library(ggplot2)
+  library(purrr)
+  library(tidyr)
+#+end_src
+
+Then, let's figure out how to roll a virtual die in R. This function should do it:
+
+#+NAME: roll-die
+#+begin_src R
+  roll_die <- function(n = 1, d = 20) {
+    sum(sample(seq_len(d), size = n, replace = TRUE))
+  }
+#+end_src
+
+#+RESULTS: roll-die
+
+By creating a vector of length ~d~, and sampling from it ~n~ times, with
+replacement, and then taking the sum of those numbers we get simulated
+dice-rolls!
+
+Test if it works
+#+begin_src R
+  c(roll_die(),       # 1d20
+    roll_die(1, 10),  # 1d10
+    roll_die(2, 6),   # 2d6
+    roll_die(2, 4))   # 2d4
+#+end_src
+
+#+RESULTS:
+|  6 |
+|  8 |
+| 10 |
+|  6 |
+
+This seems to work!
+
+Now we need to call this function many times for the simulations. Again, we
+write a wrapper function for it---this may be overkill, but hey, it's my
+project!
+
+#+NAME: replicate
+#+begin_src R
+  rep_dice <- function(n, d, n_sim = 1e5) {
+    replicate(n_sim, roll_die(n, d))
+  }
+#+end_src
+
+#+RESULTS: replicate
+
+We can have a very quick glance at what this results in by creating some
+histograms for example sims. I use base graphics here, for old time's sake. And
+because I'd first have to convert the vector into a ~data.frame~ or ~tibble~ to use
+it in ~ggplot~, and I want to keep it light during this phase.
+
+#+begin_src R
+  make_hist <- function(n, d, n_sim = 1e5) {
+    data.frame(Result = rep_dice(n, d)) %>%
+      ggplot(aes(Result)) +
+      geom_histogram(binwidth = 1) +
+      scale_x_continuous(breaks = seq(n, n * d, by = 1)) +
+      labs(title = paste0("Histogram of ", n, "d", d, " dice rolls (", n_sim, " simulations)"))
+  }
+#+end_src
+
+#+RESULTS:
+
+#+begin_src R :results graphics file :file 2d4hist.png :height 300
+  make_hist(2, 4)
+#+end_src
+
+#+RESULTS:
+[[file:2d4hist.png]]
+
+#+begin_src R :results graphics file :file 2d6hist.png :height 300
+  make_hist(2, 6)
+#+end_src
+
+#+RESULTS:
+[[file:2d6hist.png]]
+
+Now it's time to read in the data and do some simulations!
+
+We also convert everything into sensible units.
+
+#+begin_src R :var dat=races :colnames yes
+  races <- dat %>%
+    mutate(base_cm = bh_f * 30.48 + bh_i * 2.54,
+           base_kg = Base.Weight * 0.4535923) %>%
+    as_tibble()
+#+end_src
+
+#+RESULTS:
+| Race            | Base.Height | bh_f | bh_i | Height.Modifier | n_height | d_height | Base.Weight | Weight.Modifier | n_weight | d_weight | base_cm |    base_kg |
+|-----------------+-------------+------+------+-----------------+----------+----------+-------------+-----------------+----------+----------+---------+------------|
+| Human           |           4 |    4 |    8 |           +2d10 |        2 |       10 |         110 | ×(2d4) lb.      |        2 |        4 |  142.24 |  49.895153 |
+| Dwarf, hill     |           3 |    3 |    8 |            +2d4 |        2 |        4 |         115 | ×(2d6) lb.      |        2 |        6 |  111.76 | 52.1631145 |
+| Dwarf, mountain |           4 |    4 |    0 |            +2d4 |        2 |        4 |         130 | ×(2d6) lb.      |        2 |        6 |  121.92 |  58.966999 |
+| Elf,  high      |           4 |    4 |    6 |           +2d10 |        2 |       10 |          90 | ×(1d4) lb.      |        1 |        4 |  137.16 |  40.823307 |
+| Elf, wood       |           4 |    4 |    6 |           +2d10 |        2 |       10 |         100 | ×(1d4) lb.      |        1 |        4 |  137.16 |   45.35923 |
+| Elf,  drow      |           4 |    4 |    5 |            +2d6 |        2 |        6 |          75 | ×(1d6) lb.      |        1 |        6 |  134.62 | 34.0194225 |
+| Halfling        |           2 |    2 |    7 |            +2d4 |        2 |        4 |          35 | ×1 lb.          |      nil |      nil |   78.74 | 15.8757305 |
+| Dragonborn      |           5 |    5 |    6 |            +2d8 |        2 |        8 |         175 | ×(2d6) lb.      |        2 |        6 |  167.64 | 79.3786525 |
+| Gnome           |           2 |    2 |   11 |            +2d4 |        2 |        4 |          35 | ×1 lb.          |      nil |      nil |    88.9 | 15.8757305 |
+| Half-elf        |           4 |    4 |    9 |            +2d8 |        2 |        8 |         110 | ×(2d4) lb.      |        2 |        4 |  144.78 |  49.895153 |
+| Half-orc        |           4 |    4 |   10 |           +2d10 |        2 |       10 |         140 | ×(2d6) lb.      |        2 |        6 |  147.32 |  63.502922 |
+| Tiefling        |           4 |    4 |    9 |            +2d8 |        2 |        8 |         110 | ×(2d4) lb.      |        2 |        4 |  144.78 |  49.895153 |
+
+Now let's simulate some dice-rolls! We're creating some new list-columns, using
+~purrr::map~ and then unnesting them for easier calculations.
+
+#+begin_src R
+  races_stats  <- races %>%
+    mutate(height_roll = map2(n_height, d_height, possibly(rep_dice, otherwise = 1)),
+           weight_roll = map2(n_weight, d_weight, possibly(rep_dice, otherwise = 1))) %>%
+    unnest(cols = c(height_roll, weight_roll)) %>%
+    mutate(height = base_cm + height_roll * 2.54,  # convert roll from inches to cm
+           weight = base_kg + height_roll * weight_roll * 0.4535923)  # convert rolls from lbs to kg
+#+end_src
+
+#+RESULTS:
+
+Note the ~tidyr::possibly~ here, which allows me to ignore the weight rolls for
+the Halfling and Gnome and instead set their value to 1.
+
+Then we calculate median height and weight and append them back to the original data.
+
+We also convert Race to a factor, which is sorted by the average height.
+
+#+begin_src R :colnames yes
+  races_sum <- races_stats %>%
+    group_by(Race) %>%
+    summarize(height_med = median(height),
+              weight_med = median(weight)) %>%
+    left_join(races, by = "Race") %>%
+    arrange(height_med) %>%
+    mutate(Race = factor(Race, levels = Race),
+           lab_kg = paste0(Height.Modifier, Weight.Modifier))
+#+end_src
+
+#+RESULTS:
+| Race            | height_med |  weight_med | Base.Height | bh_f | bh_i | Height.Modifier | n_height | d_height | Base.Weight | Weight.Modifier | n_weight | d_weight | base_cm |    base_kg | lab_kg          |
+|-----------------+------------+-------------+-------------+------+------+-----------------+----------+----------+-------------+-----------------+----------+----------+---------+------------+-----------------|
+| Halfling        |      91.44 |   18.143692 |           2 |    2 |    7 |            +2d4 |        2 |        4 |          35 | ×1 lb.          |      nil |      nil |   78.74 | 15.8757305 | +2d4×1 lb.      |
+| Gnome           |      101.6 |   18.143692 |           2 |    2 |   11 |            +2d4 |        2 |        4 |          35 | ×1 lb.          |      nil |      nil |    88.9 | 15.8757305 | +2d4×1 lb.      |
+| Dwarf, hill     |     124.46 |  67.1316604 |           3 |    3 |    8 |            +2d4 |        2 |        4 |         115 | ×(2d6) lb.      |        2 |        6 |  111.76 | 52.1631145 | +2d4×(2d6) lb.  |
+| Dwarf, mountain |     134.62 |  73.4819526 |           4 |    4 |    0 |            +2d4 |        2 |        4 |         130 | ×(2d6) lb.      |        2 |        6 |  121.92 |  58.966999 | +2d4×(2d6) lb.  |
+| Elf,  drow      |      152.4 |  43.5448608 |           4 |    4 |    5 |            +2d6 |        2 |        6 |          75 | ×(1d6) lb.      |        1 |        6 |  134.62 | 34.0194225 | +2d6×(1d6) lb.  |
+| Elf,  high      |      165.1 |  51.7095222 |           4 |    4 |    6 |           +2d10 |        2 |       10 |          90 | ×(1d4) lb.      |        1 |        4 |  137.16 |  40.823307 | +2d10×(1d4) lb. |
+| Elf, wood       |      165.1 |  56.2454452 |           4 |    4 |    6 |           +2d10 |        2 |       10 |         100 | ×(1d4) lb.      |        1 |        4 |  137.16 |   45.35923 | +2d10×(1d4) lb. |
+| Half-elf        |     167.64 |  68.9460296 |           4 |    4 |    9 |            +2d8 |        2 |        8 |         110 | ×(2d4) lb.      |        2 |        4 |  144.78 |  49.895153 | +2d8×(2d4) lb.  |
+| Tiefling        |     167.64 |  68.9460296 |           4 |    4 |    9 |            +2d8 |        2 |        8 |         110 | ×(2d4) lb.      |        2 |        4 |  144.78 |  49.895153 | +2d8×(2d4) lb.  |
+| Human           |     170.18 |  73.0283603 |           4 |    4 |    8 |           +2d10 |        2 |       10 |         110 | ×(2d4) lb.      |        2 |        4 |  142.24 |  49.895153 | +2d10×(2d4) lb. |
+| Half-orc        |     175.26 |  96.1615676 |           4 |    4 |   10 |           +2d10 |        2 |       10 |         140 | ×(2d6) lb.      |        2 |        6 |  147.32 |  63.502922 | +2d10×(2d6) lb. |
+| Dragonborn      |      190.5 | 106.5941905 |           5 |    5 |    6 |            +2d8 |        2 |        8 |         175 | ×(2d6) lb.      |        2 |        6 |  167.64 | 79.3786525 | +2d8×(2d6) lb.  |
+
+Great! Now let's create a plot of the average height by race, with a violin
+plot to illustrate the distribution.
+
+I further annotate the plot with base height points and which modifier was used
+to get the distribution of heights.
+
+#+begin_src R :results graphics file :file raceheights.png :width 600
+  pl_h <- races_sum %>%
+    ggplot(aes(x = Race, y = height_med)) +
+    geom_bar(stat="identity", alpha = .5) +
+    geom_violin(aes(y = height), bw = 2.54, scale= "width", colour = NA, fill = "cornflowerblue", alpha = .8, data = races_stats) +
+    geom_text(aes(y = base_cm + 2, hjust = 0, label = paste0(Height.Modifier, "'")), angle = 90) +
+    geom_point(aes(y = base_cm)) +
+    ylim(c(0, NA)) +
+    labs(y = "Height (cm)") # +
+    ## coord_flip()
+  pl_h
+#+end_src
+
+#+RESULTS:
+[[file:raceheights.png]]
+
+Notice the ~bw~ argument to ~geom_violin~: this is used to adjust the smoothing
+kernel a bit. I've used the value to convert my units in cm back to inches,
+because with lower values we get artificial jittering.
+
+Now we do the same for weight:
+#+begin_src R :results graphics file :file raceweights.png :width 600
+  pl_w <- races_sum %>%
+    ggplot(aes(x = Race, y = weight_med)) +
+    geom_bar(stat="identity", alpha = .5) +
+    geom_violin(aes(y = weight), bw = 1 / 0.4535923, scale= "width", colour = NA, fill = "cornflowerblue", alpha = .8, data = races_stats) +
+    geom_point(aes(y = base_kg)) +
+    geom_text(aes(y = base_kg, label = lab_kg), hjust = -.05, angle = 90) +
+    ylim(c(0, NA)) +
+    labs(y = "Weight (kg)") # +
+  pl_w
+#+end_src
+
+#+RESULTS:
+[[file:raceweights.png]]
+
+(Again, we set ~bw~ to the value to convert kg to lbs.)
+
+To ultimately combine the two into one figure using ~patchwork~.
+
+#+begin_src R :results graphics file :file races_stats.png :width 600 :height 600
+  library(patchwork)
+  pl <- (pl_h + labs(title = "D&D 5e Race size and weight distributions based on rolls") &
+         theme(axis.title.x = element_blank(),
+               axis.text.x = element_blank(),
+               axis.ticks.x = element_blank())) /
+    (pl_w & theme(axis.text.x = element_text(size = 10, angle = 30, hjust = 1, face = "bold")))
+  pl
+#+end_src
+
+#+CAPTION: Race sizes and weights from D&D 5e, calculated by simulating 10^5 dice roll combinations.
+#+RESULTS:
+[[file:races_stats.png]]
+
+And that's it! A quick dive into some simulations with R! Any feedback on how
+to improve this workflow is welcome.
