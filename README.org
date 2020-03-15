@@ -125,6 +125,17 @@ histograms for example sims.
 
 #+RESULTS:
 
+Let's check that we have a fair die
+#+begin_src R :results graphics file :file 1d20hist.png :height 300
+  make_hist(1, 20)
+#+end_src
+
+#+RESULTS:
+[[file:1d20hist.png]]
+
+This seems ok.
+
+What happens if we roll 2d4?
 #+begin_src R :results graphics file :file 2d4hist.png :height 300
   make_hist(2, 4)
 #+end_src
@@ -133,6 +144,7 @@ histograms for example sims.
 
 [[file:2d4hist.png]]
 
+Or 2d6?
 #+begin_src R :results graphics file :file 2d6hist.png :height 300
   make_hist(2, 6)
 #+end_src
