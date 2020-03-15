@@ -132,6 +132,7 @@ it in ~ggplot~, and I want to keep it light during this phase.
 #+end_src
 
 #+RESULTS:
+
 [[file:2d4hist.png]]
 
 #+begin_src R :results graphics file :file 2d6hist.png :height 300
@@ -139,6 +140,7 @@ it in ~ggplot~, and I want to keep it light during this phase.
 #+end_src
 
 #+RESULTS:
+
 [[file:2d6hist.png]]
 
 Now it's time to read in the data and do some simulations!
@@ -236,6 +238,7 @@ to get the distribution of heights.
 #+end_src
 
 #+RESULTS:
+
 [[file:raceheights.png]]
 
 Notice the ~bw~ argument to ~geom_violin~: this is used to adjust the smoothing
@@ -256,6 +259,7 @@ Now we do the same for weight:
 #+end_src
 
 #+RESULTS:
+
 [[file:raceweights.png]]
 
 (Again, we set ~bw~ to the value to convert kg to lbs.)
@@ -272,8 +276,8 @@ To ultimately combine the two into one figure using ~patchwork~.
   pl
 #+end_src
 
-#+CAPTION: Race sizes and weights from D&D 5e, calculated by simulating 10^5 dice roll combinations.
 #+RESULTS:
+
 [[file:races_stats.png]]
 
 And that's it! A quick dive into some simulations with R! Any feedback on how
