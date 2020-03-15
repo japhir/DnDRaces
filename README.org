@@ -111,9 +111,7 @@ project!
 #+RESULTS: replicate
 
 We can have a very quick glance at what this results in by creating some
-histograms for example sims. I use base graphics here, for old time's sake. And
-because I'd first have to convert the vector into a ~data.frame~ or ~tibble~ to use
-it in ~ggplot~, and I want to keep it light during this phase.
+histograms for example sims.
 
 #+begin_src R
   make_hist <- function(n, d, n_sim = 1e5) {
