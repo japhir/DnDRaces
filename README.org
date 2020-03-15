@@ -1,6 +1,7 @@
 #+TITLE: Simulating D&D 5e Race Heights and Weights
 #+OPTIONS: ^:{}
 
+* D&D Character height and weight
 In D&D you can roll dice to determine your character's height and weight based
 on it's race.
 
@@ -25,6 +26,7 @@ To calculate the height, you have to add the ~Base Height~ to, e.g. 2d10 dice
 rolls for the Human, which means you have to roll two 10-sided-die to determine
 how much to add, in inches.
 
+* Problem: I think metric
 I don't think in terms of feet, inches, and pounds, so I thought I'd convert
 some things to centimetres and kilogrammes in stead. Furthermore, I wanted to
 better understand how these dice-rolls influence the final distribution of
@@ -32,6 +34,7 @@ weights and heights in the D&D universe.
 
 And so I've simulated some dice-rolls to answer those questions!
 
+* Tidying the data
 Here I've quickly (manually) tidied the table up for use in R.
 
 #+TBLNAME: races
@@ -58,6 +61,7 @@ e.g. RStudio with RMarkdown, it's easier to save the table as a csv first.
 # this is so that we work in an R session in emacs with ess
 #+PROPERTY: header-args:R  :session *R*
 
+* Load libraries
 First load the libraries we use here:
 #+begin_src R
   library(dplyr)
@@ -66,6 +70,7 @@ First load the libraries we use here:
   library(tidyr)
 #+end_src
 
+* Virtual dice
 Then, let's figure out how to roll a virtual die in R. This function should do it:
 
 #+NAME: roll-die
@@ -110,6 +115,7 @@ project!
 
 #+RESULTS: replicate
 
+* Histogram of roll results
 We can have a very quick glance at what this results in by creating some
 histograms for example sims.
 
@@ -153,6 +159,7 @@ Or 2d6?
 
 [[file:2d6hist.png]]
 
+* Sensible units
 Now it's time to read in the data and do some simulations!
 
 We also convert everything into sensible units.
@@ -180,6 +187,7 @@ We also convert everything into sensible units.
 | Half-orc        |           4 |    4 |   10 |           +2d10 |        2 |       10 |         140 | ×(2d6) lb.      |        2 |        6 |  147.32 |  63.502922 |
 | Tiefling        |           4 |    4 |    9 |            +2d8 |        2 |        8 |         110 | ×(2d4) lb.      |        2 |        4 |  144.78 |  49.895153 |
 
+* Simulate many dice-rolls
 Now let's simulate some dice-rolls! We're creating some new list-columns, using
 ~purrr::map~ and then unnesting them for easier calculations.
 
@@ -197,6 +205,7 @@ Now let's simulate some dice-rolls! We're creating some new list-columns, using
 Note the ~tidyr::possibly~ here, which allows me to ignore the weight rolls for
 the Halfling and Gnome and instead set their value to 1.
 
+* Averages
 Then we calculate median height and weight and append them back to the original data.
 
 We also convert Race to a factor, which is sorted by the average height.
@@ -228,6 +237,7 @@ We also convert Race to a factor, which is sorted by the average height.
 | Half-orc        |     175.26 |  96.1615676 |           4 |    4 |   10 |           +2d10 |        2 |       10 |         140 | ×(2d6) lb.      |        2 |        6 |  147.32 |  63.502922 | +2d10×(2d6) lb. |
 | Dragonborn      |      190.5 | 106.5941905 |           5 |    5 |    6 |            +2d8 |        2 |        8 |         175 | ×(2d6) lb.      |        2 |        6 |  167.64 | 79.3786525 | +2d8×(2d6) lb.  |
 
+* Plot of Heights
 Great! Now let's create a plot of the average height by race, with a violin
 plot to illustrate the distribution.
 
@@ -255,6 +265,7 @@ Notice the ~bw~ argument to ~geom_violin~: this is used to adjust the smoothing
 kernel a bit. I've used the value to convert my units in cm back to inches,
 because with lower values we get artificial jittering.
 
+* Plot of Weights
 Now we do the same for weight:
 #+begin_src R :results graphics file :file raceweights.png :width 600
   pl_w <- races_sum %>%
@@ -274,6 +285,7 @@ Now we do the same for weight:
 
 (Again, we set ~bw~ to the value to convert kg to lbs.)
 
+* Combined Plot
 To ultimately combine the two into one figure using ~patchwork~.
 
 #+begin_src R :results graphics file :file races_stats.png :width 600 :height 600
