@@ -343,6 +343,8 @@ I found these BMI categories [[https://en.wikipedia.org/wiki/Body_mass_index#Cat
   bmi_avg %>%
     ggplot(aes(x = Race, y = bmi)) +
     # annotate the categories
+    geom_point() + # It looks like this is necessary to keep the factor levels in
+                   # the right order
     geom_rect(aes(xmin = -Inf, xmax = Inf,
                   ymin = from,
                   ymax = to,
@@ -350,14 +352,16 @@ I found these BMI categories [[https://en.wikipedia.org/wiki/Body_mass_index#Cat
               inherit.aes = FALSE, data = cat) +
     scale_fill_brewer(palette = "RdBu") +
     geom_violin(data = bmi, bw = .8, fill = "gray", draw_quantiles = c(.25, .5, .75)) +
-    labs(fill = "BMI\nif they would have been human", y = "BMI (kg /"~m^2*")") +
+    labs(fill = "BMI category\nif they would have been human", y = "BMI (kg /"~m^2*")") +
     geom_point() +
-    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+    theme(axis.text.x = element_text(angle = 30, hjust = 1, face = "bold"))
 #+end_src
 
 #+RESULTS:
 
 [[file:races_bmi.png]]
+
+So most dwarves are, according to the human BMI, very severely obese 😉.
 
 And that's it! A quick dive into some simulations with R! Any feedback on how
 to improve this workflow is welcome.
