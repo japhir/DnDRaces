@@ -115,7 +115,7 @@ histograms for example sims.
 
 #+begin_src R
   make_hist <- function(n, d, n_sim = 1e5) {
-    data.frame(Result = rep_dice(n, d)) %>%
+    data.frame(Result = rep_dice(n, d, n_sim)) %>%
       ggplot(aes(Result)) +
       geom_histogram(binwidth = 1) +
       scale_x_continuous(breaks = seq(n, n * d, by = 1)) +
