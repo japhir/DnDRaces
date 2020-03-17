@@ -56,6 +56,8 @@ Then, let's figure out how to roll a virtual die in R. This function should do i
   }
 #+end_src
 
+#+RESULTS:
+
 By creating a vector of length ~d~, and sampling from it ~n~ times, with
 replacement, and then taking the sum of those numbers we get simulated
 dice-rolls!
@@ -77,17 +79,6 @@ Test if it works
 
 This seems to work!
 
-*** Rolling with advantage
-In D&D-land you sometimes get to roll with advantage. This means that you roll
-a d20 twice, and take the higher of the two. I also wanted to study what
-happens when we do that, so we add a new function!
-
-#+begin_src R
-  roll_with_advantage <- function(d = 20) {
-    max(sample(seq_len(d), size = 2, replace = TRUE))
-  }
-#+end_src
-
 ** Repeated rolls
 Now we need to call the ~roll_die~ function many times for the simulations.
 
@@ -107,12 +98,13 @@ histograms for example sims.
 
     pl <- dat %>%
       ggplot(aes(Result)) +
-      geom_histogram(binwidth = 1) +
-      scale_x_continuous(breaks = seq_len(max(vec)))
+      geom_bar()
 
     pl
   }
 #+end_src
+
+#+RESULTS:
 
 #+begin_src R :results graphics file :file 1d20hist.png :height 300
   replicate(1e5, roll_dice(1, 20)) %>%
@@ -146,6 +138,18 @@ Or 2d6?
 [[file:2d6hist.png]]
 
 *** Rolling With Advantage
+In D&D-land you sometimes get to roll with advantage. This means that you roll
+a d20 twice, and take the higher of the two. I also wanted to study what
+happens when we do that, so we add a new function!
+
+#+begin_src R
+  roll_with_advantage <- function(d = 20) {
+    max(sample(seq_len(d), size = 2, replace = TRUE))
+  }
+#+end_src
+
+#+RESULTS:
+
 #+begin_src R :results graphics file :file d20_advantage.png :height 300
   replicate(1e5, roll_with_advantage(20)) %>%
     make_hist() + labs(title = "Histogram of 1e5 simulations of d20 rolls with advantage")
@@ -154,6 +158,28 @@ Or 2d6?
 #+RESULTS:
 
 [[file:d20_advantage.png]]
+
+*** Rolling With Disadvantage
+When you're particularly unskilled at something, your DM may ask you to roll
+with disadvantage. This means: roll 2d20 and take the lower.
+
+#+begin_src R
+  roll_with_disadvantage <- function(d = 20) {
+    min(sample(seq_len(d), size = 2, replace = TRUE))
+  }
+#+end_src
+
+#+RESULTS:
+
+
+#+begin_src R :results graphics file :file d20_disadvantage.png :height 300
+  replicate(1e5, roll_with_disadvantage(20)) %>%
+    make_hist() + labs(title = "Histogram of 1e5 simulations of d20 rolls with disadvantage")
+#+end_src
+
+#+RESULTS:
+
+[[file:d20_disadvantage.png]]
 
 * Tidying of the table
 Here I've quickly (manually) tidied the table up for use in R.
