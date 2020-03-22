@@ -438,4 +438,5 @@ what the odds are. So again, time to simulate!
 #+end_src
 
 #+RESULTS:
+
 [[file:stat_rolls.png]]
