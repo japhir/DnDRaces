@@ -137,50 +137,6 @@ Or 2d6?
 
 [[file:2d6hist.png]]
 
-*** Rolling With Advantage
-In D&D-land you sometimes get to roll with advantage. This means that you roll
-a d20 twice, and take the higher of the two. I also wanted to study what
-happens when we do that, so we add a new function!
-
-#+begin_src R
-  roll_with_advantage <- function(d = 20) {
-    max(sample(seq_len(d), size = 2, replace = TRUE))
-  }
-#+end_src
-
-#+RESULTS:
-
-#+begin_src R :results graphics file :file d20_advantage.png :height 300
-  replicate(1e5, roll_with_advantage(20)) %>%
-    make_hist() + labs(title = "Histogram of 1e5 simulations of d20 rolls with advantage")
-#+end_src
-
-#+RESULTS:
-
-[[file:d20_advantage.png]]
-
-*** Rolling With Disadvantage
-When you're particularly unskilled at something, your DM may ask you to roll
-with disadvantage. This means: roll 2d20 and take the lower.
-
-#+begin_src R
-  roll_with_disadvantage <- function(d = 20) {
-    min(sample(seq_len(d), size = 2, replace = TRUE))
-  }
-#+end_src
-
-#+RESULTS:
-
-
-#+begin_src R :results graphics file :file d20_disadvantage.png :height 300
-  replicate(1e5, roll_with_disadvantage(20)) %>%
-    make_hist() + labs(title = "Histogram of 1e5 simulations of d20 rolls with disadvantage")
-#+end_src
-
-#+RESULTS:
-
-[[file:d20_disadvantage.png]]
-
 * Tidying of the table
 Here I've quickly (manually) tidied the table up for use in R.
 
@@ -217,8 +173,6 @@ We also convert everything into sensible units.
     as_tibble()
 #+end_src
 
-#+RESULTS:
-
 | Race            | Base.Height | bh_f | bh_i | Height.Modifier | n_height | d_height | Base.Weight | Weight.Modifier | n_weight | d_weight | base_cm |    base_kg |
 |-----------------+-------------+------+------+-----------------+----------+----------+-------------+-----------------+----------+----------+---------+------------|
 | Human           |           4 |    4 |    8 |           +2d10 |        2 |       10 |         110 | ×(2d4) lb.      |        2 |        4 |  142.24 |  49.895153 |
@@ -245,6 +199,8 @@ First we define a new function that replicates the analysis:
   }
 #+end_src
 
+#+RESULTS:
+
 And then we run it for all the Races.
 
 #+begin_src R
@@ -255,6 +211,8 @@ And then we run it for all the Races.
     mutate(height = base_cm + height_rolls * 2.54,  # convert roll from inches to cm
            weight = base_kg + height_rolls * weight_rolls * 0.4535923)  # convert rolls from lbs to kg
 #+end_src
+
+#+RESULTS:
 
 Note the ~tidyr::possibly~ here, which allows me to ignore the weight rolls for
 the Halfling and Gnome and instead set their value to 1.
@@ -417,3 +375,65 @@ So most dwarves are, according to the human BMI, very severely obese 😉.
 
 And that's it! A quick dive into some simulations with R! Any feedback on how
 to improve this workflow is welcome.
+* Other Dice roll simulations
+** Rolling With Advantage
+In D&D-land you sometimes get to roll with advantage. This means that you roll
+a d20 twice, and take the higher of the two. I also wanted to study what
+happens when we do that, so we add a new function!
+
+#+begin_src R
+  roll_with_advantage <- function(d = 20) {
+    max(sample(seq_len(d), size = 2, replace = TRUE))
+  }
+#+end_src
+
+#+RESULTS:
+
+#+begin_src R :results graphics file :file d20_advantage.png :height 300
+  replicate(1e5, roll_with_advantage(20)) %>%
+    make_hist() + labs(title = "Histogram of 1e5 simulations of d20 rolls with advantage")
+#+end_src
+
+#+RESULTS:
+
+[[file:d20_advantage.png]]
+
+** Rolling With Disadvantage
+When you're particularly unskilled at something, your DM may ask you to roll
+with disadvantage. This means: roll 2d20 and take the lower.
+
+#+begin_src R
+  roll_with_disadvantage <- function(d = 20) {
+    min(sample(seq_len(d), size = 2, replace = TRUE))
+  }
+#+end_src
+
+#+begin_src R :results graphics file :file d20_disadvantage.png :height 300
+  replicate(1e5, roll_with_disadvantage(20)) %>%
+    make_hist() + labs(title = "Histogram of 1e5 simulations of d20 rolls with disadvantage")
+#+end_src
+
+#+RESULTS:
+
+[[file:d20_disadvantage.png]]
+
+** Rolling for Stats
+Some DM's let you roll for stats. The common way of doing so is by rolling 4d6
+and dropping the lower. Then repeating this 6 times.
+
+When I did this the first time, I got some pretty high rolls and I wondered
+what the odds are. So again, time to simulate!
+#+begin_src R :results graphics file :file stat_rolls.png :height 300
+  stat_roll <- function() {
+    # roll 4d6, drop the lowest
+    rolls <- sample(1:6, 4, replace = TRUE)
+    # use the highest two values only
+    sum(sort(rolls)[-1])
+  }
+
+ replicate(1e5, stat_roll()) %>%
+  make_hist() + labs(title = "Rolling for stats using the roll 4d6 drop lowest method")
+#+end_src
+
+#+RESULTS:
+[[file:stat_rolls.png]]
