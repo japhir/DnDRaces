@@ -89,8 +89,9 @@ We can do this with ~replicate~ as follows:
 #+end_src
 
 ** Histogram of roll results
-We can have a very quick glance at what this results in by creating some
-histograms for example sims.
+We can have a very quick glance at what this results in by creating a bargraph
+with the resulting roll total on the x-axis, and the probability of getting
+that roll on the y-axis.
 
 #+begin_src R
   make_hist <- function(vec) {
@@ -98,7 +99,8 @@ histograms for example sims.
 
     pl <- dat %>%
       ggplot(aes(Result)) +
-      geom_bar()
+      geom_bar(aes(y = stat(count) / sum(stat(count)))) +
+      labs(y = "Probability")
 
     pl
   }
