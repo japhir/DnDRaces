@@ -71,6 +71,10 @@ Test if it works
 #+end_src
 
 #+RESULTS:
+| 9 |
+| 2 |
+| 8 |
+| 8 |
 
 | 10 |
 |  7 |
@@ -425,18 +429,76 @@ and dropping the lower. Then repeating this 6 times.
 
 When I did this the first time, I got some pretty high rolls and I wondered
 what the odds are. So again, time to simulate!
-#+begin_src R :results graphics file :file stat_rolls.png :height 300
-  stat_roll <- function() {
-    # roll 4d6, drop the lowest
-    rolls <- sample(1:6, 4, replace = TRUE)
-    # use the highest two values only
-    sum(sort(rolls)[-1])
-  }
 
- replicate(1e5, stat_roll()) %>%
-  make_hist() + labs(title = "Rolling for stats using the roll 4d6 drop lowest method")
+#+begin_src R :results none
+   stat_roll <- function() {
+     # roll 4d6, drop the lowest
+     rolls <- sample(1:6, 4, replace = TRUE)
+     # use the highest two values only
+     sum(sort(rolls)[-1])
+   }
+#+end_src
+
+So if you want to roll for stats without rolling any dice (BOOOOO!):
+#+begin_src R
+  replicate(6, stat_roll())
 #+end_src
 
 #+RESULTS:
 
+| 13 |
+| 17 |
+| 13 |
+|  7 |
+| 13 |
+|  8 |
+
+Let's visualize the likelihood of all the total values:
+#+begin_src R :results graphics file :file stat_rolls.png :height 300
+  stdarray <- c(8, 10, 12:15)
+
+  replicate(1e5, stat_roll()) %>%
+     make_hist() + labs(title = "Rolling for stats using the roll 4d6 drop lowest method") +
+     geom_bar(aes(x = value, y = stat(count) / sum(stat(count))), data = stdarray %>% as_tibble(), fill = "red", alpha = .2, position = "identity")
+#+end_src
+
+#+RESULTS:
 [[file:stat_rolls.png]]
+
+so let's do some calculations:
+#+begin_src R :colnames yes
+  sa <- list(min=min(stdarray),
+        mean=mean(stdarray),
+        median=median(stdarray),
+        max=max(stdarray))
+#+end_src
+
+#+RESULTS:
+| min | mean | median | max |
+|-----+------+--------+-----|
+|   8 |   12 |   12.5 |  15 |
+
+#+begin_src R :colnames yes
+  sr <- replicate(1e5, stat_roll()) %>%
+     as_tibble() %>%
+     summarize(min = min(value),
+               mean = mean(value),
+               median = median(value),
+               max = max(value))
+#+end_src
+
+#+RESULTS:
+| min |     mean | median | max |
+|-----+----------+--------+-----|
+|   3 | 12.24936 |     12 |  18 |
+
+#+begin_src R :colnames yes
+  bind_rows(sa, sr)
+#+end_src
+
+#+RESULTS:
+
+| name           | min |     mean | median | max |
+|----------------+-----+----------+--------+-----|
+| standard array |   8 |       12 |   12.5 |  15 |
+| roll for stats |   3 | 12.24936 |     12 |  18 |
