@@ -518,6 +518,7 @@ simulate 1e5 sets of 6 stats, take the sum
 #+end_src
 
 #+RESULTS:
+
 [[file:stat_sum_vs_stdarray.png]]
 do some calculations
 #+begin_src R
