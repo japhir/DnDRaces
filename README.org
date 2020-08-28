@@ -445,61 +445,102 @@ So if you want to roll for stats without rolling any dice (BOOOOO!):
 #+end_src
 
 #+RESULTS:
+| 15 |
+| 11 |
+| 13 |
+| 16 |
+| 11 |
+| 11 |
 
-| 13 |
-| 17 |
-| 13 |
-|  7 |
-| 13 |
-|  8 |
+comparison to pointbuy and standard array
+#+begin_src R :colnames "yes"
+  comparison <- tribble( ~ name, ~ array,
+                        "standard", c(8, 10, 12, 13, 14, 15),
+                        "pointbuy 3 high 3 low", c(15, 15, 15, 8, 8, 8),
+                        "pointbuy all medium", c(13, 13, 13, 12, 12, 12),
+                        ) %>%
+    mutate(sum = map_dbl(array, sum))
+  comparison %>% select(-array)
+#+end_src
+
+#+RESULTS:
+| name                  | sum |
+|-----------------------+-----|
+| standard              |  72 |
+| pointbuy 3 high 3 low |  69 |
+| pointbuy all medium   |  75 |
 
 Let's visualize the likelihood of all the total values:
 #+begin_src R :results graphics file :file stat_rolls.png :height 300
-  stdarray <- c(8, 10, 12:15)
-
   replicate(1e5, stat_roll()) %>%
-     make_hist() + labs(title = "Rolling for stats using the roll 4d6 drop lowest method") +
-     geom_bar(aes(x = value, y = stat(count) / sum(stat(count))), data = stdarray %>% as_tibble(), fill = "red", alpha = .2, position = "identity")
+    make_hist() + labs(title = "Rolling for stats using the roll 4d6 drop lowest method") +
+    geom_bar(aes(x = array, y = stat(count) / sum(stat(count)), group = name, fill = name),
+             data = comparison %>% unnest(array),
+             width = .5,
+             alpha = .6)
 #+end_src
 
 #+RESULTS:
-
 [[file:stat_rolls.png]]
 
-so let's do some calculations:
-#+begin_src R :colnames yes
-  sa <- list(min=min(stdarray),
-        mean=mean(stdarray),
-        median=median(stdarray),
-        max=max(stdarray))
-#+end_src
-
-#+RESULTS:
-| min | mean | median | max |
-|-----+------+--------+-----|
-|   8 |   12 |   12.5 |  15 |
-
+[[file:stat_rolls.png]]
 #+begin_src R :colnames yes
   sr <- replicate(1e5, stat_roll()) %>%
-     as_tibble() %>%
-     summarize(min = min(value),
-               mean = mean(value),
-               median = median(value),
-               max = max(value))
+    as_tibble() %>%
+    mutate(name = "roll for stats") %>%
+    bind_rows(comparison %>% unnest(array) %>% rename(value=array)) %>%
+    group_by(name) %>%
+    summarize(min = min(value),
+              mean = mean(value),
+              median = median(value),
+              max = max(value))
 #+end_src
 
 #+RESULTS:
-| min |     mean | median | max |
-|-----+----------+--------+-----|
-|   3 | 12.24936 |     12 |  18 |
+| name                  | min |     mean | median | max |
+|-----------------------+-----+----------+--------+-----|
+| pointbuy 3 high 3 low |   8 |     11.5 |   11.5 |  15 |
+| pointbuy all medium   |  12 |     12.5 |   12.5 |  13 |
+| roll for stats        |   3 | 12.24506 |     12 |  18 |
+| standard              |   8 |       12 |   12.5 |  15 |
 
-#+begin_src R :colnames yes
-  bind_rows(sa, sr)
+let's calculate when the sum of ability scores is highest
+
+simulate 1e5 sets of 6 stats, take the sum
+#+begin_src R
+  sr <- replicate(1e5, sum(replicate(6, stat_roll()))) %>%
+    as_tibble()
+#+end_src
+
+#+begin_src R :results output graphics file :file stat_sum_vs_stdarray.png :width 700 :height 300
+  make_hist(sr$value) +
+   geom_vline(aes(xintercept = sum, colour = name), data = comparison, size = 2, alpha = .5)
 #+end_src
 
 #+RESULTS:
+[[file:stat_sum_vs_stdarray.png]]
+do some calculations
+#+begin_src R
+  sb <- sr %>%
+    mutate(
+      rbs = value > comparison$sum[[1]],
+      rbp1 = value > comparison$sum[[2]],
+      rbp2 = value > comparison$sum[[3]],
+    )
+#+end_src
 
-| name           | min |     mean | median | max |
-|----------------+-----+----------+--------+-----|
-| standard array |   8 |       12 |   12.5 |  15 |
-| roll for stats |   3 | 12.24936 |     12 |  18 |
+how often is rolling better than pointbuy or standard array?
+#+begin_src R :colnames "yes"
+  tribble(~ name, ~ `P roll better than X`,
+    "standardarray", sum(sb$rbs) / nrow(sb),
+    "pointbuy 3 high 3 low", sum(sb$rbp1) / nrow(sb),
+    "pointbuy all medium", sum(sb$rbp2) / nrow(sb)
+  )
+#+end_src
+
+#+RESULTS:
+| name                  | P roll better than X |
+|-----------------------+----------------------|
+| standardarray         |              0.56215 |
+| pointbuy 3 high 3 low |              0.71725 |
+| pointbuy all medium   |              0.39306 |
